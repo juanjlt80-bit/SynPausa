@@ -73,24 +73,21 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:16px 28px;
+    padding:12px 28px;
     max-width:1140px;
     margin:0 auto;
   }
   .logo{
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:700;
-    font-size:1.3rem;
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:10px;
     text-decoration:none;
     color:var(--ink);
   }
-  .logo .dot{
-    width:9px;height:9px;border-radius:50%;
-    background:var(--mango);
-    display:inline-block;
+  .logo-img{
+    height:38px;
+    width:auto;
+    object-fit:contain;
   }
   nav.links{
     display:flex;
@@ -669,7 +666,9 @@
 
 <header class="nav">
   <div class="nav-inner">
-    <a href="#top" class="logo"><span class="dot"></span>SynPausa</a>
+    <a href="#top" class="logo">
+      <img src="logo.png" alt="SynPausa Logo" class="logo-img">
+    </a>
     <ul class="links" id="navLinks">
       <li><a href="#como-funciona">Cómo funciona</a></li>
       <li><a href="#tiendas">Tiendas</a></li>
@@ -901,7 +900,7 @@
             <li><span class="n">01</span> Envía la marca, el producto y la talla que buscas.</li>
             <li><span class="n">02</span> Te confirmamos precio estimado y disponibilidad.</li>
             <li><span class="n">03</span> Realizas el abono para asegurar tu pedido.</li>
-            <li><span class="n">04</span> Recibes tu pedido al regreso del viaje.</li>
+            <li><span class="n">04</span> Recibes tu pedido al regresar del viaje.</li>
           </ul>
         </div>
         <div class="order-cta">
@@ -920,7 +919,9 @@
   <div class="wrap">
     <div class="footer-inner">
       <div class="footer-brand">
-        <a href="#top" class="logo"><span class="dot"></span>SynPausa</a>
+        <a href="#top" class="logo">
+          <img src="logo.png" alt="SynPausa Logo" class="logo-img">
+        </a>
         <p>Personal shopping desde los outlets de Orlando hasta la puerta de tu casa en Colombia.</p>
       </div>
       <div class="footer-col">
