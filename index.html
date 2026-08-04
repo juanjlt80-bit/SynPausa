@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>SynPausa — Personal Shopping Orlando → Colombia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --paper-dim:#EAF0F8;
+    --ink:#0A3161;
+    --ink-soft:#3D5A80;
+    --rust:#B31942;
+    --gold:#B31942;
+    --green:#2F5D8A;
+    --wa:#25D366;
+  }
+  html{scroll-behavior:smooth;}
+  body{background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; overflow-x:hidden;}
+  .font-display{font-family:'Oswald',sans-serif; letter-spacing:0.02em;}
+  .font-mono{font-family:'IBM Plex Mono',monospace;}
+  ::selection{background:var(--rust); color:var(--paper);}
+
+  /* Departure board flip digits */
+  .flip{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:4px;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.06);
+  }
+  .flip::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; top:50%;
+    height:1px;
+    background:rgba(0,0,0,.5);
+  }
+
+  /* Ticket / luggage-tag card */
+  .tag-card{
+    position:relative;
+    background:var(--paper);
+    border:1px solid rgba(10,49,97,0.18);
+    border-radius:0 14px 14px 0;
+  }
+  .tag-hole{
+    position:absolute;
+    left:-11px; top:50%; transform:translateY(-50%);
+    width:22px; height:22px;
+    background:var(--paper-dim);
+    border:1px solid rgba(10,49,97,0.25);
+    border-radius:9999px;
+    z-index:5;
+  }
+  body .tag-hole{background:var(--paper);}
+  .perforation{
+    border-top:2px dashed rgba(10,49,97,0.28);
+  }
+  .stamp{
+    transform:rotate(-8deg);
+    border:2px solid var(--rust);
+    color:var(--rust);
+  }
+  .checkerboard{
+    background-image:
+      linear-gradient(45deg, rgba(10,49,97,0.05) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(10,49,97,0.05) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(10,49,97,0.05) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(10,49,97,0.05) 75%);
+    background-size:16px 16px;
+    background-position:0 0, 0 8px, 8px -8px, -8px 0px;
+  }
+  .studio-bg{
+    background:
+      radial-gradient(circle at 50% 40%, rgba(10,49,97,0.08), transparent 65%),
+      linear-gradient(180deg, var(--paper-dim), var(--paper) 85%);
+  }
+  .size-chip{
+    transition:all .15s ease;
+  }
+  .size-chip.selected{
+    background:var(--ink); color:var(--paper); border-color:var(--ink);
+  }
+  .pay-chip{
+    transition:all .15s ease;
+  }
+  .pay-chip.selected{
+    background:var(--ink); color:var(--paper); border-color:var(--ink);
+    box-shadow:0 4px 14px rgba(10,49,97,0.25);
+  }
+  .cat-tab{
+    transition:all .15s ease;
+  }
+  .cat-tab.active{
+    background:var(--ink); color:var(--paper);
+    box-shadow:0 2px 8px rgba(10,49,97,0.25);
+  }
+  .glass-header{
+    background:rgba(10,49,97,0.96);
+    backdrop-filter:blur(8px);
+  }
+  .btn-lift{
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn-lift:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 24px rgba(10,49,97,0.2);
+  }
+  @keyframes fadeInUp{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .fade-in-up{animation:fadeInUp .4s ease both;}
+  input[type=range]{-webkit-appearance:none; height:4px; background:rgba(10,49,97,0.25); border-radius:9999px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:9999px; background:var(--rust); cursor:pointer; border:2px solid var(--paper); box-shadow:0 0 0 1px var(--rust);}
+  .scrollbar-thin::-webkit-scrollbar{width:6px;}
+  .scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(10,49,97,.3); border-radius:9999px;}
+  #drawer{transition:transform .3s ease;}
+  #modalWrap{transition:opacity .2s ease;}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ===================== HEADER / DEPARTURE BOARD ===================== -->
+<header class="glass-header text-[var(--paper)] sticky top-0 z-40 shadow-lg shadow-[var(--ink)]/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+    <div class="flex items-center gap-2">
+      <span class="font-display text-2xl sm:text-3xl font-semibold tracking-wide">SYN<span class="text-[var(--gold)]">PAUSA</span></span>
+      <span class="hidden sm:inline font-mono text-[10px] text-[var(--paper)]/50 border border-[var(--paper)]/25 rounded px-1.5 py-0.5 ml-1">@synpausa</span>
+    </div>
+    <nav class="hidden lg:flex items-center gap-8 font-mono text-xs uppercase tracking-widest text-[var(--paper)]/80">
+      <a href="#catalogo" class="hover:text-[var(--gold)] transition">Catálogo</a>
+      <a href="#como-funciona" class="hover:text-[var(--gold)] transition">Cómo funciona</a>
+      <a href="#trm" class="hover:text-[var(--gold)] transition">Tasa de cambio</a>
+      <a href="#contacto" class="hover:text-[var(--gold)] transition">Contacto</a>
+    </nav>
+    <button id="hamburger" class="lg:hidden flex flex-col gap-1.5 w-8 h-8 items-center justify-center" aria-label="Abrir menú">
+      <span class="block w-6 h-0.5 bg-[var(--paper)]"></span>
+      <span class="block w-6 h-0.5 bg-[var(--paper)]"></span>
+      <span class="block w-6 h-0.5 bg-[var(--paper)]"></span>
+    </button>
+  </div>
+
+  <!-- mobile nav -->
+  <div id="mobileNav" class="hidden lg:hidden border-t border-[var(--paper)]/15 px-4 py-3 flex flex-col gap-3 font-mono text-xs uppercase tracking-widest text-[var(--paper)]/80">
+    <a href="#catalogo">Catálogo</a>
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#trm">Tasa de cambio</a>
+    <a href="#contacto">Contacto</a>
+  </div>
+
+  <!-- board strip -->
+  <div class="border-t border-[var(--paper)]/15 bg-black/20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3 font-mono text-[11px] sm:text-xs text-[var(--paper)]/70">
+        <span class="text-[var(--gold)]">BOG</span>
+        <span>✈</span>
+        <span class="text-[var(--gold)]">MCO</span>
+        <span class="hidden sm:inline text-[var(--paper)]/40">| Orlando International & Vineland Premium Tiendas</span>
+      </div>
+      <div class="flex items-center gap-1.5 sm:gap-2" id="countdown">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<section class="relative overflow-hidden checkerboard">
+  <div class="absolute inset-0 bg-gradient-to-br from-[var(--paper-dim)] via-transparent to-[var(--rust)]/[0.04] pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center relative">
+    <div>
+      <p class="inline-block font-mono text-xs uppercase tracking-[0.25em] text-[var(--rust)] mb-4 bg-[var(--rust)]/10 px-3 py-1.5 rounded-full">Boarding pass · Personal Shopping</p>
+      <h1 class="font-display text-4xl sm:text-6xl font-semibold leading-[0.95] mb-6">
+        Tus tiendas favoritas de Orlando,<br class="hidden sm:block"> sin tomar un vuelo.
+      </h1>
+      <p class="text-[var(--ink-soft)] text-base sm:text-lg max-w-xl mb-8">
+        En noviembre viajamos a las Simon Premium Tiendas de Orlando a comprar tus encargos: Nike, Adidas, Coach, Michael Kors, Apple y más — con precio final calculado en COP, sin sorpresas.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a href="#catalogo" class="btn-lift bg-[var(--ink)] text-[var(--paper)] font-mono text-sm uppercase tracking-wider px-6 py-3.5 rounded-full hover:bg-[var(--rust)] transition-colors shadow-md">Ver catálogo</a>
+        <a href="#como-funciona" class="btn-lift bg-white border border-[var(--ink)]/20 font-mono text-sm uppercase tracking-wider px-6 py-3.5 rounded-full hover:border-[var(--ink)] transition-colors shadow-sm">Cómo funciona</a>
+      </div>
+    </div>
+
+    <!-- boarding pass visual -->
+    <div class="relative mx-auto max-w-sm w-full">
+      <div class="absolute inset-0 tag-card border-[var(--rust)]/20 shadow-lg rotate-3 translate-x-3 translate-y-2 opacity-40"></div>
+      <div class="tag-card relative shadow-2xl">
+        <div class="tag-hole"></div>
+        <div class="p-5 sm:p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">Pase de compra</p>
+              <p class="font-display text-xl font-semibold">SynPausa Shopper</p>
+            </div>
+            <span class="stamp font-mono text-[10px] font-bold uppercase px-2 py-1 rounded-full">Confirmado</span>
+          </div>
+          <div class="perforation my-4"></div>
+          <div class="grid grid-cols-2 gap-4 font-mono text-xs mb-4">
+            <div><p class="text-[var(--ink-soft)]">Origen</p><p class="text-lg font-semibold">BOG</p></div>
+            <div><p class="text-[var(--ink-soft)]">Destino</p><p class="text-lg font-semibold">MCO</p></div>
+            <div><p class="text-[var(--ink-soft)]">Fecha</p><p class="font-semibold">Nov 2026</p></div>
+            <div><p class="text-[var(--ink-soft)]">Puerta</p><p class="font-semibold">Vineland / OIP</p></div>
+          </div>
+          <div class="perforation my-4"></div>
+          <p class="font-mono text-[10px] text-[var(--ink-soft)] uppercase tracking-widest">Entrega estimada</p>
+          <p class="font-semibold">2–3 semanas tras el viaje</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COMO FUNCIONA ===================== -->
+<section id="como-funciona" class="border-y border-[var(--ink)]/10 bg-[var(--paper-dim)]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid sm:grid-cols-3 gap-6">
+    <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-[var(--ink)]/5">
+      <div class="w-9 h-9 rounded-full bg-[var(--rust)] text-white font-mono text-sm font-bold flex items-center justify-center mb-4">1</div>
+      <h3 class="font-display text-xl font-semibold mb-1">Eliges y encargas</h3>
+      <p class="text-sm text-[var(--ink-soft)]">Filtra por tienda, categoría o precio, escoge tu talla y encarga por WhatsApp.</p>
+    </div>
+    <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-[var(--ink)]/5">
+      <div class="w-9 h-9 rounded-full bg-[var(--rust)] text-white font-mono text-sm font-bold flex items-center justify-center mb-4">2</div>
+      <h3 class="font-display text-xl font-semibold mb-1">Compramos en Orlando</h3>
+      <p class="text-sm text-[var(--ink-soft)]">En noviembre recorremos Orlando International y Vineland Premium Tiendas por tu pedido.</p>
+    </div>
+    <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-[var(--ink)]/5">
+      <div class="w-9 h-9 rounded-full bg-[var(--rust)] text-white font-mono text-sm font-bold flex items-center justify-center mb-4">3</div>
+      <h3 class="font-display text-xl font-semibold mb-1">Lo recibes en Colombia</h3>
+      <p class="text-sm text-[var(--ink-soft)]">Coordinamos entrega y pago final al precio ya calculado en COP.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TRM CONTROL ===================== -->
+<section id="trm" class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <div class="bg-[var(--ink)] text-[var(--paper)] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 shadow-lg shadow-[var(--ink)]/15">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-[var(--rust)] flex items-center justify-center shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div>
+        <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--paper)]/50">TRM oficial</p>
+        <p class="font-mono text-xs text-[var(--paper)]/80">Tasa de cambio usada para calcular tus precios en tiempo real</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 flex-1">
+      <span class="font-mono text-xs text-[var(--paper)]/60">$3.500</span>
+      <input id="trmRange" type="range" min="3500" max="4800" step="10" value="4100" class="flex-1">
+      <span class="font-mono text-xs text-[var(--paper)]/60">$4.800</span>
+    </div>
+    <div class="font-mono text-lg font-semibold whitespace-nowrap bg-white/10 rounded-full px-4 py-2 text-center">
+      1 USD = $<span id="trmValue">4.100</span> COP
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CATALOGO ===================== -->
+<section id="catalogo" class="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+
+  <div class="flex items-center justify-between mb-4 lg:hidden">
+    <h2 class="font-display text-2xl font-semibold">Catálogo</h2>
+    <button id="openFilters" class="font-mono text-xs uppercase tracking-wider border border-[var(--ink)]/20 bg-white shadow-sm rounded-full px-4 py-2.5">Filtros</button>
+  </div>
+
+  <div class="grid lg:grid-cols-[260px_1fr] gap-8">
+
+    <!-- SIDEBAR (desktop) -->
+    <aside class="hidden lg:block">
+      <div class="sticky top-40 bg-white rounded-2xl shadow-sm border border-[var(--ink)]/5 p-5 space-y-6">
+        <div>
+          <h3 class="font-display text-lg font-semibold mb-3">Catálogo</h3>
+          <input id="searchDesktop" type="text" placeholder="Buscar producto o tienda..." class="w-full bg-[var(--paper-dim)] border border-transparent rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--rust)] focus:bg-white transition">
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Categoría</p>
+          <div id="catTabsDesktop" class="flex flex-col gap-1.5 font-mono text-xs"></div>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Tienda</p>
+          <div id="storeListDesktop" class="flex flex-col gap-1.5 text-sm max-h-48 overflow-y-auto scrollbar-thin pr-1"></div>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Precio máx. (COP)</p>
+          <input id="priceRangeDesktop" type="range" min="0" max="3000000" step="50000" value="3000000" class="w-full">
+          <p class="font-mono text-xs mt-1">Hasta $<span id="priceRangeDesktopValue">3.000.000</span></p>
+        </div>
+        <button id="clearFiltersDesktop" class="font-mono text-xs uppercase tracking-wider underline text-[var(--ink-soft)] hover:text-[var(--rust)] transition">Limpiar filtros</button>
+      </div>
+    </aside>
+
+    <!-- GRID -->
+    <div>
+      <div class="hidden lg:flex items-center justify-between mb-4">
+        <h2 class="font-display text-2xl font-semibold">Top Sellers</h2>
+        <p id="resultCount" class="font-mono text-xs text-[var(--ink-soft)]"></p>
+      </div>
+      <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+      <p id="emptyState" class="hidden text-center py-16 font-mono text-sm text-[var(--ink-soft)]">No encontramos productos con esos filtros. Prueba ajustando la búsqueda.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer id="contacto" class="bg-[var(--ink)] text-[var(--paper)] relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-14 grid sm:grid-cols-2 gap-8 relative">
+    <div>
+      <span class="font-display text-2xl font-semibold">SYN<span class="text-[var(--gold)]">PAUSA</span></span>
+      <p class="font-mono text-xs text-[var(--paper)]/60 mt-3 max-w-sm leading-relaxed">Personal shopping en las Simon Premium Tiendas de Orlando. Encargos de noviembre, entregados en Colombia.</p>
+    </div>
+    <div class="sm:text-right">
+      <p class="font-mono text-xs text-[var(--paper)]/60 mb-2">¿Preguntas sobre tu encargo?</p>
+      <a href="#" id="footerWhatsapp" class="btn-lift inline-flex items-center gap-2 font-mono text-sm uppercase tracking-wider bg-[var(--wa)] text-[var(--ink)] px-5 py-3 rounded-full font-semibold shadow-md">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5C10 9 9.5 7.6 9.3 7c-.2-.5-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.3-.9 1-.9 2.3 0 1.4 1 2.7 1.1 2.9.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.5-.3z"/><path d="M12 2a10 10 0 00-8.5 15.2L2 22l4.9-1.5A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.1l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1112 20.2z"/></svg>
+        Escríbenos por WhatsApp
+      </a>
+    </div>
+  </div>
+</footer>
+
+<!-- ===================== MOBILE FILTER DRAWER ===================== -->
+<div id="drawerOverlay" class="hidden fixed inset-0 bg-black/50 z-50"></div>
+<div id="drawer" class="fixed top-0 right-0 h-full w-[85%] max-w-xs bg-[var(--paper)] z-50 translate-x-full shadow-2xl overflow-y-auto scrollbar-thin">
+  <div class="p-5 space-y-6">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display text-xl font-semibold">Filtros</h3>
+      <button id="closeDrawer" class="text-2xl leading-none">&times;</button>
+    </div>
+    <input id="searchMobile" type="text" placeholder="Buscar producto o tienda..." class="w-full bg-white border border-[var(--ink)]/20 rounded px-3 py-2 text-sm">
+    <div>
+      <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Categoría</p>
+      <div id="catTabsMobile" class="flex flex-col gap-1.5 font-mono text-xs"></div>
+    </div>
+    <div>
+      <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Tienda</p>
+      <div id="storeListMobile" class="flex flex-col gap-1.5 text-sm max-h-48 overflow-y-auto scrollbar-thin pr-1"></div>
+    </div>
+    <div>
+      <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Precio máx. (COP)</p>
+      <input id="priceRangeMobile" type="range" min="0" max="3000000" step="50000" value="3000000" class="w-full">
+      <p class="font-mono text-xs mt-1">Hasta $<span id="priceRangeMobileValue">3.000.000</span></p>
+    </div>
+    <button id="applyFiltersMobile" class="w-full bg-[var(--ink)] text-[var(--paper)] font-mono text-sm uppercase tracking-wider py-3 rounded-sm">Aplicar filtros</button>
+    <button id="clearFiltersMobile" class="w-full font-mono text-xs uppercase tracking-wider underline text-[var(--ink-soft)]">Limpiar filtros</button>
+  </div>
+</div>
+
+<!-- ===================== PRODUCT MODAL ===================== -->
+<div id="modalWrap" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div id="modalOverlay" class="absolute inset-0 bg-black/60"></div>
+  <div class="relative bg-[var(--paper)] w-full sm:max-w-lg sm:rounded-lg rounded-t-2xl max-h-[92vh] overflow-y-auto scrollbar-thin">
+    <button id="closeModal" class="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-[var(--ink)] text-[var(--paper)] rounded-full text-xl leading-none z-10">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA: STORES + TOP-SELLER PRODUCTS (Simon Tiendas Orlando)
+   ============================================================ */
+const STORES = [
+  "Nike Factory Store","Adidas","Polo Ralph Lauren","Tommy Hilfiger",
+  "Coach","Michael Kors","Under Armour","Levi's","Columbia","Apple Premium Reseller"
+];
+
+const CATEGORIES = ["Ropa","Tenis / Calzado","Tecnología","Accesorios"];
+
+const SIZE_SETS = {
+  shoe: ["7US","7.5US","8US","8.5US","9US","9.5US","10US","10.5US","11US"],
+  apparel: ["S","M","L","XL"],
+  onesize: ["Talla única"]
+};
+
+const PRODUCTS = [
+  {id:1, name:"Air Max SC", store:"Nike Factory Store", category:"Tenis / Calzado", usd:65, marketCOP:520000, sizes:SIZE_SETS.shoe},
+  {id:2, name:"Dri-FIT Tee Swoosh", store:"Nike Factory Store", category:"Ropa", usd:22, marketCOP:180000, sizes:SIZE_SETS.apparel},
+  {id:3, name:"Ultraboost Light", store:"Adidas", category:"Tenis / Calzado", usd:110, marketCOP:850000, sizes:SIZE_SETS.shoe},
+  {id:4, name:"Track Jacket 3-Stripes", store:"Adidas", category:"Ropa", usd:48, marketCOP:390000, sizes:SIZE_SETS.apparel},
+  {id:5, name:"Polo Clásico Piqué", store:"Polo Ralph Lauren", category:"Ropa", usd:55, marketCOP:480000, sizes:SIZE_SETS.apparel},
+  {id:6, name:"Gorra Bordada Pony", store:"Polo Ralph Lauren", category:"Accesorios", usd:28, marketCOP:230000, sizes:SIZE_SETS.onesize},
+  {id:7, name:"Camisa Oxford Slim", store:"Tommy Hilfiger", category:"Ropa", usd:40, marketCOP:340000, sizes:SIZE_SETS.apparel},
+  {id:8, name:"Correa Logo Reversible", store:"Tommy Hilfiger", category:"Accesorios", usd:25, marketCOP:210000, sizes:SIZE_SETS.onesize},
+  {id:9, name:"Bolso Tote Signature", store:"Coach", category:"Accesorios", usd:150, marketCOP:1450000, sizes:SIZE_SETS.onesize},
+  {id:10, name:"Billetera Cuero", store:"Coach", category:"Accesorios", usd:65, marketCOP:560000, sizes:SIZE_SETS.onesize},
+  {id:11, name:"Reloj Bradshaw", store:"Michael Kors", category:"Accesorios", usd:135, marketCOP:1200000, sizes:SIZE_SETS.onesize},
+  {id:12, name:"Bolso Jet Set Crossbody", store:"Michael Kors", category:"Accesorios", usd:95, marketCOP:820000, sizes:SIZE_SETS.onesize},
+  {id:13, name:"Hoodie Rival Fleece", store:"Under Armour", category:"Ropa", usd:38, marketCOP:310000, sizes:SIZE_SETS.apparel},
+  {id:14, name:"Tenis HOVR Sonic", store:"Under Armour", category:"Tenis / Calzado", usd:70, marketCOP:560000, sizes:SIZE_SETS.shoe},
+  {id:15, name:"Jean 501 Original", store:"Levi's", category:"Ropa", usd:45, marketCOP:390000, sizes:SIZE_SETS.apparel},
+  {id:16, name:"Chaqueta Trucker", store:"Levi's", category:"Ropa", usd:52, marketCOP:430000, sizes:SIZE_SETS.apparel},
+  {id:17, name:"Chaqueta Impermeable", store:"Columbia", category:"Ropa", usd:80, marketCOP:650000, sizes:SIZE_SETS.apparel},
+  {id:18, name:"Tenis Trail Facet", store:"Columbia", category:"Tenis / Calzado", usd:58, marketCOP:470000, sizes:SIZE_SETS.shoe},
+  {id:19, name:"AirPods Pro (2ª Gen)", store:"Apple Premium Reseller", category:"Tecnología", usd:199, marketCOP:1150000, sizes:SIZE_SETS.onesize},
+  {id:20, name:"Apple Watch SE", store:"Apple Premium Reseller", category:"Tecnología", usd:249, marketCOP:1450000, sizes:SIZE_SETS.onesize},
+];
+
+const CATEGORY_ICONS = {
+  "Ropa": `<path d="M9 3l3 2 3-2 4 3-2 3-2-1v11H8V8L6 9 4 6z"/>`,
+  "Tenis / Calzado": `<path d="M3 17c0-2 2-3 4-3l3-4c1-1 2-1 3-1l6 3c1 .5 2 1.5 2 3v2H3z"/><path d="M3 17h17"/>`,
+  "Tecnología": `<rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/>`,
+  "Accesorios": `<path d="M6 8V6a6 6 0 0112 0v2"/><rect x="4" y="8" width="16" height="12" rx="2"/>`
+};
+
+function categoryIconSvg(cat, extraClass=""){
+  return `<svg class="${extraClass}" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${CATEGORY_ICONS[cat]}</svg>`;
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  trm: 4100,
+  search: "",
+  category: "Todas",
+  stores: new Set(),
+  maxPrice: 3000000,
+};
+
+const WHATSAPP_NUMBER = "573046714842";
+
+/* ============================================================
+   PRICE ENGINE
+   ============================================================ */
+function calcFinalCOP(usd, trm){
+  return ((((usd * trm) + 350) * 1.57) + 50000);
+}
+function calcInstallmentCOP(finalCOP){
+  return finalCOP * 1.20;
+}
+function formatCOP(n){
+  return Math.round(n).toLocaleString("es-CO");
+}
+function savingsPct(finalCOP, marketCOP){
+  if(!marketCOP) return null;
+  const pct = ((marketCOP - finalCOP) / marketCOP) * 100;
+  return pct;
+}
+
+/* ============================================================
+   COUNTDOWN — target: Nov 1, 2026 00:00 America/Bogota
+   ============================================================ */
+const TARGET_DATE = new Date("2026-11-01T00:00:00-05:00");
+function renderCountdown(){
+  const el = document.getElementById("countdown");
+  const now = new Date();
+  let diff = Math.max(0, TARGET_DATE - now);
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const units = [["DÍAS", d], ["HRS", h], ["MIN", m], ["SEG", s]];
+  el.innerHTML = units.map(([label,val]) => `
+    <div class="flex flex-col items-center">
+      <div class="flip relative font-mono text-sm sm:text-lg font-semibold px-2 py-1 min-w-[2.4rem] text-center">${String(val).padStart(2,"0")}</div>
+      <span class="font-mono text-[8px] sm:text-[9px] text-[var(--paper)]/50 mt-0.5">${label}</span>
+    </div>
+  `).join(`<span class="text-[var(--paper)]/30 font-mono">:</span>`);
+}
+renderCountdown();
+setInterval(renderCountdown, 1000);
+
+/* ============================================================
+   FILTER UI BUILD (category tabs + store checkboxes) x2 (desktop/mobile)
+   ============================================================ */
+function buildCategoryTabs(containerId){
+  const el = document.getElementById(containerId);
+  const all = ["Todas", ...CATEGORIES];
+  el.innerHTML = all.map(cat => `
+    <button data-cat="${cat}" class="cat-tab text-left px-3 py-2 rounded-full border border-[var(--ink)]/15 ${state.category===cat?"active":""}">${cat}</button>
+  `).join("");
+  el.querySelectorAll(".cat-tab").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.category = btn.dataset.cat;
+      syncFilterUI();
+      renderGrid();
+    });
+  });
+}
+
+function buildStoreList(containerId){
+  const el = document.getElementById(containerId);
+  el.innerHTML = STORES.map(store => `
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" data-store="${store}" class="store-check accent-[var(--rust)]" ${state.stores.has(store)?"checked":""}>
+      <span>${store}</span>
+    </label>
+  `).join("");
+  el.querySelectorAll(".store-check").forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      if(cb.checked) state.stores.add(cb.dataset.store);
+      else state.stores.delete(cb.dataset.store);
+      syncFilterUI();
+      renderGrid();
+    });
+  });
+}
+
+function syncFilterUI(){
+  // re-render both sets so desktop/mobile stay consistent
+  buildCategoryTabs("catTabsDesktop");
+  buildCategoryTabs("catTabsMobile");
+  buildStoreList("storeListDesktop");
+  buildStoreList("storeListMobile");
+}
+
+buildCategoryTabs("catTabsDesktop");
+buildCategoryTabs("catTabsMobile");
+buildStoreList("storeListDesktop");
+buildStoreList("storeListMobile");
+
+/* ============================================================
+   TRM CONTROL
+   ============================================================ */
+const trmRange = document.getElementById("trmRange");
+trmRange.addEventListener("input", ()=>{
+  state.trm = Number(trmRange.value);
+  document.getElementById("trmValue").textContent = state.trm.toLocaleString("es-CO");
+  renderGrid();
+  if(currentModalProduct) openModal(currentModalProduct); // keep modal price live
+});
+
+/* ============================================================
+   SEARCH + PRICE RANGE (desktop & mobile mirrors)
+   ============================================================ */
+function bindSearch(id){
+  document.getElementById(id).addEventListener("input", (e)=>{
+    state.search = e.target.value.toLowerCase();
+    renderGrid();
+  });
+}
+bindSearch("searchDesktop");
+bindSearch("searchMobile");
+
+function bindPriceRange(rangeId, labelId){
+  const range = document.getElementById(rangeId);
+  const label = document.getElementById(labelId);
+  range.addEventListener("input", ()=>{
+    state.maxPrice = Number(range.value);
+    label.textContent = state.maxPrice.toLocaleString("es-CO");
+    // mirror to the other slider
+    [document.getElementById("priceRangeDesktop"), document.getElementById("priceRangeMobile")].forEach(r=>{
+      if(r.id !== rangeId) r.value = state.maxPrice;
+    });
+    [document.getElementById("priceRangeDesktopValue"), document.getElementById("priceRangeMobileValue")].forEach(l=>{
+      if(l.id !== labelId) l.textContent = state.maxPrice.toLocaleString("es-CO");
+    });
+    renderGrid();
+  });
+}
+bindPriceRange("priceRangeDesktop","priceRangeDesktopValue");
+bindPriceRange("priceRangeMobile","priceRangeMobileValue");
+
+document.getElementById("clearFiltersDesktop").addEventListener("click", clearFilters);
+document.getElementById("clearFiltersMobile").addEventListener("click", clearFilters);
+function clearFilters(){
+  state.search = "";
+  state.category = "Todas";
+  state.stores.clear();
+  state.maxPrice = 3000000;
+  document.getElementById("searchDesktop").value = "";
+  document.getElementById("searchMobile").value = "";
+  document.getElementById("priceRangeDesktop").value = 3000000;
+  document.getElementById("priceRangeMobile").value = 3000000;
+  document.getElementById("priceRangeDesktopValue").textContent = "3.000.000";
+  document.getElementById("priceRangeMobileValue").textContent = "3.000.000";
+  syncFilterUI();
+  renderGrid();
+}
+
+/* ============================================================
+   MOBILE DRAWER
+   ============================================================ */
+const drawer = document.getElementById("drawer");
+const drawerOverlay = document.getElementById("drawerOverlay");
+function openDrawer(){
+  drawer.classList.remove("translate-x-full");
+  drawerOverlay.classList.remove("hidden");
+}
+function closeDrawerFn(){
+  drawer.classList.add("translate-x-full");
+  drawerOverlay.classList.add("hidden");
+}
+document.getElementById("openFilters").addEventListener("click", openDrawer);
+document.getElementById("closeDrawer").addEventListener("click", closeDrawerFn);
+document.getElementById("applyFiltersMobile").addEventListener("click", closeDrawerFn);
+drawerOverlay.addEventListener("click", closeDrawerFn);
+
+/* mobile main nav */
+document.getElementById("hamburger").addEventListener("click", ()=>{
+  document.getElementById("mobileNav").classList.toggle("hidden");
+});
+
+/* ============================================================
+   GRID RENDER
+   ============================================================ */
+function filteredProducts(){
+  return PRODUCTS.filter(p=>{
+    const finalCOP = calcFinalCOP(p.usd, state.trm);
+    if(state.category !== "Todas" && p.category !== state.category) return false;
+    if(state.stores.size > 0 && !state.stores.has(p.store)) return false;
+    if(finalCOP > state.maxPrice) return false;
+    if(state.search){
+      const hay = (p.name + " " + p.store).toLowerCase();
+      if(!hay.includes(state.search)) return false;
+    }
+    return true;
+  });
+}
+
+function productCardHTML(p){
+  const finalCOP = calcFinalCOP(p.usd, state.trm);
+  const installmentCOP = calcInstallmentCOP(finalCOP);
+  const pct = savingsPct(finalCOP, p.marketCOP);
+  return `
+  <div class="tag-card group shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer" data-id="${p.id}">
+    <div class="tag-hole"></div>
+    <div class="relative studio-bg rounded-tr-2xl h-36 flex items-center justify-center text-[var(--ink)]/60 overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-[var(--ink)]/[0.06] to-transparent"></div>
+      <div class="transition-transform duration-300 group-hover:scale-110">${categoryIconSvg(p.category)}</div>
+      <span class="absolute top-2 right-2 stamp bg-[var(--paper)]/95 backdrop-blur-sm font-mono text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full">IA ✓</span>
+      <span class="absolute bottom-2 left-2 font-mono text-[9px] uppercase tracking-wider bg-[var(--paper)]/95 backdrop-blur-sm px-2 py-0.5 rounded-full border border-[var(--ink)]/10 shadow-sm">${p.store}</span>
+    </div>
+    <div class="perforation"></div>
+    <div class="p-4">
+      <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-soft)] mb-1">${p.category}</p>
+      <h3 class="font-display text-lg font-semibold leading-tight mb-2">${p.name}</h3>
+      <div class="flex items-baseline gap-2 mb-2">
+        <span class="text-[var(--ink-soft)] text-xs line-through font-mono">$${formatCOP(p.marketCOP)}</span>
+        ${pct !== null ? `<span class="text-[10px] font-mono font-semibold text-[var(--green)] bg-[var(--green)]/10 px-1.5 py-0.5 rounded-full">-${pct.toFixed(0)}% vs Colombia</span>` : ""}
+      </div>
+      <div class="flex items-end justify-between gap-2 mb-3 bg-[var(--paper-dim)] rounded-xl px-3 py-2">
+        <div>
+          <p class="font-mono text-[9px] uppercase tracking-widest text-[var(--ink-soft)]">De contado</p>
+          <p class="font-mono text-xl font-semibold text-[var(--rust)]">$${formatCOP(finalCOP)}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-mono text-[9px] uppercase tracking-widest text-[var(--ink-soft)]">A cuotas</p>
+          <p class="font-mono text-sm font-semibold text-[var(--ink)]">$${formatCOP(installmentCOP)}</p>
+        </div>
+      </div>
+      <button class="view-btn w-full bg-[var(--ink)] text-[var(--paper)] font-mono text-xs uppercase tracking-wider py-3 rounded-full hover:bg-[var(--rust)] transition-colors duration-200 shadow-sm">Ver tallas y encargar</button>
+    </div>
+  </div>`;
+}
+
+function renderGrid(){
+  const list = filteredProducts();
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("emptyState");
+  document.getElementById("resultCount").textContent = `${list.length} producto${list.length!==1?"s":""}`;
+  if(list.length === 0){
+    grid.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  grid.innerHTML = list.map(productCardHTML).join("");
+  grid.querySelectorAll("[data-id]").forEach(card=>{
+    card.addEventListener("click", ()=>{
+      const product = PRODUCTS.find(p=>p.id === Number(card.dataset.id));
+      openModal(product);
+    });
+  });
+}
+
+/* ============================================================
+   PRODUCT MODAL
+   ============================================================ */
+const modalWrap = document.getElementById("modalWrap");
+const modalContent = document.getElementById("modalContent");
+let currentModalProduct = null;
+let selectedSize = null;
+let selectedPayment = "contado";
+
+function openModal(product){
+  currentModalProduct = product;
+  selectedSize = null;
+  selectedPayment = "contado";
+  renderModal();
+  modalWrap.classList.remove("hidden");
+}
+function closeModalFn(){
+  modalWrap.classList.add("hidden");
+  currentModalProduct = null;
+}
+document.getElementById("closeModal").addEventListener("click", closeModalFn);
+document.getElementById("modalOverlay").addEventListener("click", closeModalFn);
+
+function renderModal(){
+  const p = currentModalProduct;
+  const finalCOP = calcFinalCOP(p.usd, state.trm);
+  const installmentCOP = calcInstallmentCOP(finalCOP);
+  const pct = savingsPct(finalCOP, p.marketCOP);
+  const activePrice = selectedPayment === "contado" ? finalCOP : installmentCOP;
+
+  modalContent.innerHTML = `
+    <div class="studio-bg h-48 flex items-center justify-center text-[var(--ink)]/60 relative overflow-hidden rounded-t-2xl sm:rounded-t-lg">
+      <div class="absolute inset-0 bg-gradient-to-br from-[var(--ink)]/[0.07] to-transparent"></div>
+      ${categoryIconSvg(p.category, "scale-[2.2] relative")}
+      <span class="absolute top-3 left-3 stamp bg-[var(--paper)]/95 backdrop-blur-sm font-mono text-[9px] font-bold uppercase px-2 py-1 rounded-full">Imagen procesada por IA</span>
+    </div>
+    <div class="p-5 sm:p-6">
+      <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-soft)] mb-1">${p.store} · ${p.category}</p>
+      <h2 class="font-display text-2xl font-semibold mb-3">${p.name}</h2>
+
+      <div class="flex items-baseline gap-3 mb-4">
+        <span class="text-[var(--ink-soft)] text-sm line-through font-mono">$${formatCOP(p.marketCOP)}</span>
+        ${pct !== null ? `<span class="text-xs font-mono font-semibold text-[var(--green)] bg-[var(--green)]/10 px-2 py-0.5 rounded-full">-${pct.toFixed(0)}% vs Colombia</span>` : ""}
+      </div>
+
+      <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Forma de pago</p>
+      <div id="payToggle" class="grid grid-cols-2 gap-2 mb-4">
+        <button data-pay="contado" class="pay-chip ${selectedPayment==='contado'?'selected':''} border border-[var(--ink)]/20 rounded-xl px-3 py-2.5 text-left transition">
+          <p class="font-mono text-[9px] uppercase tracking-widest opacity-70">De contado</p>
+          <p class="font-mono text-lg font-semibold">$${formatCOP(finalCOP)}</p>
+        </button>
+        <button data-pay="cuotas" class="pay-chip ${selectedPayment==='cuotas'?'selected':''} border border-[var(--ink)]/20 rounded-xl px-3 py-2.5 text-left transition">
+          <p class="font-mono text-[9px] uppercase tracking-widest opacity-70">A cuotas <span class="opacity-70">(+20%)</span></p>
+          <p class="font-mono text-lg font-semibold">$${formatCOP(installmentCOP)}</p>
+        </button>
+      </div>
+
+      <div class="bg-[var(--paper-dim)] rounded-xl px-4 py-3 mb-5">
+        <p class="font-mono text-[10px] uppercase tracking-widest text-[var(--ink-soft)] mb-0.5">Total a pagar</p>
+        <p class="font-mono text-3xl font-semibold text-[var(--rust)]">$<span id="modalPrice">${formatCOP(activePrice)}</span></p>
+        <p class="font-mono text-[10px] text-[var(--ink-soft)] mt-1">Precio en USD tienda: $${p.usd} · TRM $${state.trm.toLocaleString("es-CO")}</p>
+      </div>
+
+      <p class="font-mono text-[11px] uppercase tracking-widest text-[var(--ink-soft)] mb-2">Selecciona tu talla</p>
+      <div id="sizeChips" class="flex flex-wrap gap-2 mb-6">
+        ${p.sizes.map(sz => `<button data-size="${sz}" class="size-chip border border-[var(--ink)]/25 rounded-full px-3.5 py-2 font-mono text-xs">${sz}</button>`).join("")}
+      </div>
+
+      <button id="waBtn" disabled class="w-full bg-[var(--wa)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--ink)] font-mono text-sm uppercase tracking-wider py-3.5 rounded-full font-semibold flex items-center justify-center gap-2 shadow-sm hover:brightness-95 transition">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5C10 9 9.5 7.6 9.3 7c-.2-.5-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.3-.9 1-.9 2.3 0 1.4 1 2.7 1.1 2.9.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.5-.3z"/><path d="M12 2a10 10 0 00-8.5 15.2L2 22l4.9-1.5A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.1l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1112 20.2z"/></svg>
+        Encargar por WhatsApp
+      </button>
+      <p id="sizeHint" class="text-center font-mono text-[10px] text-[var(--ink-soft)] mt-2">Elige una talla para continuar</p>
+    </div>
+  `;
+
+  modalContent.querySelectorAll(".pay-chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      selectedPayment = chip.dataset.pay;
+      renderModal();
+      if(selectedSize){
+        modalContent.querySelector(`.size-chip[data-size="${selectedSize}"]`)?.classList.add("selected");
+        const btn = document.getElementById("waBtn");
+        btn.disabled = false;
+        document.getElementById("sizeHint").textContent = `Talla seleccionada: ${selectedSize}`;
+      }
+    });
+  });
+
+  modalContent.querySelectorAll(".size-chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      selectedSize = chip.dataset.size;
+      modalContent.querySelectorAll(".size-chip").forEach(c=>c.classList.remove("selected"));
+      chip.classList.add("selected");
+      const btn = document.getElementById("waBtn");
+      btn.disabled = false;
+      document.getElementById("sizeHint").textContent = `Talla seleccionada: ${selectedSize}`;
+    });
+  });
+
+  document.getElementById("waBtn").addEventListener("click", ()=>{
+    if(!selectedSize) return;
+    const finalNow = calcFinalCOP(p.usd, state.trm);
+    const priceNow = selectedPayment === "contado" ? finalNow : calcInstallmentCOP(finalNow);
+    const payLabel = selectedPayment === "contado" ? "De contado" : "A cuotas";
+    const msg = `¡Hola SynPausa! Quiero encargar: ${p.name} | Talla: ${selectedSize} | Pago: ${payLabel} | Precio Final: $${formatCOP(priceNow)}`;
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  });
+}
+
+/* footer whatsapp generic link */
+document.getElementById("footerWhatsapp").addEventListener("click", (e)=>{
+  e.preventDefault();
+  const msg = "¡Hola SynPausa! Tengo una pregunta sobre los encargos de noviembre.";
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderGrid();
+</script>
+</body>
+</html>
